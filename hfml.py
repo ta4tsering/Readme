@@ -50,7 +50,7 @@ def get_clean_hfml(lines):
     return new_content
 
 if __name__=='__main__':
-    token = "e1cb6529dac22e62efb1df93222e757e851721b4"
+    token = ""
     g = Github(token)
     pecha_id = 'P005633'
     hfml_path = Path(f"./output/publication")
