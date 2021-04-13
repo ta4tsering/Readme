@@ -54,7 +54,7 @@ def get_meta(g, pecha_id):
 if __name__=="__main__":
     file_path = "./README.md"
     commit_msg = 'bdrc link added in readme'
-    token = "e1cb6529dac22e62efb1df93222e757e851721b4"
+    token = ""
     g = Github(token)
     # with open("catalog.csv", newline="") as csvfile:
     #     pechas = list(csv.reader(csvfile, delimiter=","))
