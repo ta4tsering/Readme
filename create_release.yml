@@ -1,0 +1,104 @@
+release-project:
+    name: Release different versions of Text file
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install zipfile36 openpecha
+      - name: Create zip file for text and hfml
+        run: |
+          import os 
+          import re
+          from zipfile36 import ZipFile
+          from os.path import basename
+          from pathlib import Path
+          from openpecha.serializers import HFMLSerializer
+
+          def create_zip(base_path, name):
+              with ZipFile(name, 'w') as zipObj:
+                  for folderName, subfolders, filenames in os.walk(base_path):
+                      for filename in filenames:
+                          filePath = os.path.join(folderName, filename)
+                          zipObj.write(filePath, basename(filePath))
+
+          def get_clean_hfml(lines):
+              new_line = []
+              new_content = ""
+              for num, line in enumerate(lines,1):
+                  if  num % 2 != 0:
+                      new_line = re.sub(f"(\[\.\d+\])", "", line )
+                      new_content += new_line
+                      new_line = []
+                  else:
+                      new_content += "\n"
+              return new_content
+
+          def write_hfml(content, hfml_path, vol_num):
+              out_fn = Path(f"{hfml_path}/{vol_num}.txt")
+              out_fn.write_text(content)
+              print("Done")
+
+          if __name__=="__main__":
+              pecha_id = Path.cwd().name
+              opf_path = Path(f'../{pecha_id}/{pecha_id}.opf')
+              base_path = Path(f'../{pecha_id}/{pecha_id}.opf/base')
+              hfml_path = Path(f"./output/publication")
+              hfml_path.mkdir(exist_ok=True, parents=True)
+              zip_name = f"{pecha_id}_base.zip"
+              create_zip(base_path, zip_name)
+              serializer = HFMLSerializer(opf_path, layers=["Pagination"])
+              serializer.apply_layers()
+              results = serializer.get_result()
+              hfml = results
+              for num, vol_num in enumerate(hfml,1):
+                  content = hfml[f'{vol_num}']
+                  lines = re.split(f"(\\\n)", content)
+                  new_hfml = get_clean_hfml(lines)
+                  write_hfml(new_hfml, hfml_path, vol_num)
+              zip_name = f"{pecha_id}_hfml.zip"
+              create_zip(hfml_path, zip_name)
+                          
+        shell: python
+        
+      - name: Create Github Release
+        id: create_release
+        uses: actions/create-release@v1
+        env: 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.run_number }}
+          release_name: Release ${{ github.run_number }}
+          draft: false
+          prerelease: false
+      - name: upload base assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{  secrets.GITHUB_TOKEN }}
+        with: 
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./${{ github.event.repository.name }}_base.zip
+          asset_name: ${{ github.event.repository.name }}_base.zip
+          asset_content_type: text/zip
+      - name: upload hfml assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{  secrets.GITHUB_TOKEN }}
+        with:  
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./${{ github.event.repository.name }}_hfml.zip
+          asset_name: ${{ github.event.repository.name }}_hfml.zip
+          asset_content_type: text/zip
+
+
+
+
+
+          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

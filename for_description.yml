@@ -1,0 +1,30 @@
+name: Create Release
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+jobs:
+  add-description:
+    name: Running Environment
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Installing Dependencies
+        run: |
+          pip install requests
+      - name: Adding the description
+        env: 
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          import requests
+          import json
+          if __name__=="__main__":
+            token = "${{env.GITHUB_TOKEN}}"
+            headers = {"Authorization": f"bearer {token}"}
+            data = {"description": "tashi P008165 la"}  
+            r = requests.patch("https://api.github.com/repos/ta4tsering/P008165", headers=headers, data=json.dumps(data))
+            print(f"{r.json()}")
+        shell: python

@@ -1,0 +1,6 @@
+- name: Archive base content
+        uses: thedoctor0/zip-release@master
+        with:
+          filename: base.zip
+          path: P008165/P008165.opf/base
+          exclusions: '*meta.yml* /*.git* /*.md* /*layers/* '
